@@ -1,0 +1,709 @@
+<!DOCTYPE html><html lang="en"><head><meta name="x-poe-datastore-behavior" content="local_only"><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://unpkg.com https://d3js.org https://threejs.org https://cdn.plot.ly https://stackpath.bootstrapcdn.com https://maps.googleapis.com https://cdn.tailwindcss.com https://ajax.googleapis.com https://kit.fontawesome.com https://cdn.datatables.net https://maxcdn.bootstrapcdn.com https://code.highcharts.com https://tako-static-assets-production.s3.amazonaws.com https://www.youtube.com https://fonts.googleapis.com https://fonts.gstatic.com https://pfst.cf2.poecdn.net https://puc.poecdn.net https://i.imgur.com https://wikimedia.org https://*.icons8.com https://*.giphy.com https://picsum.photos https://images.unsplash.com; frame-src 'self' https://www.youtube.com https://trytako.com; child-src 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests; block-all-mixed-content;">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GF Interactive - AR Glasses Control</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D5CDE',
+                        secondary: '#3B82F6',
+                        accent: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #5D5CDE 0%, #3B82F6 100%);
+        }
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .dark .glass-effect {
+            background: rgba(0, 0, 0, 0.3);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .battery-fill {
+            transition: width 0.3s ease;
+        }
+        .connection-pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .slider {
+            appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: #d1d5db;
+            outline: none;
+        }
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #5D5CDE;
+            cursor: pointer;
+        }
+        .dark .slider {
+            background: #374151;
+        }
+        .modal {
+            display: none;
+        }
+        .modal.active {
+            display: flex;
+        }
+    </style>
+<script src="https://puc.poecdn.net/authenticated_preview_page/syncedState.bd4eeeb8e8e02052ee92.js"></script></head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
+    <!-- Header -->
+    <header class="gradient-bg text-white px-4 py-6 shadow-lg">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-glasses text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold">GF Interactive</h1>
+                    <p class="text-sm opacity-80">GF S+ Control Center</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div class="connection-pulse w-3 h-3 bg-green-400 rounded-full"></div>
+                <span class="text-sm">Connected</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Tab Navigation -->
+    <nav class="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700">
+        <div class="flex overflow-x-auto">
+            <button class="tab-btn px-4 py-3 text-sm font-medium border-b-2 border-primary text-primary whitespace-nowrap" data-tab="dashboard">
+                <i class="fas fa-tachometer-alt mr-1"></i> Dashboard
+            </button>
+            <button class="tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 whitespace-nowrap" data-tab="apps">
+                <i class="fas fa-th-large mr-1"></i> Apps
+            </button>
+            <button class="tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 whitespace-nowrap" data-tab="display">
+                <i class="fas fa-palette mr-1"></i> Display
+            </button>
+            <button class="tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 whitespace-nowrap" data-tab="camera">
+                <i class="fas fa-camera mr-1"></i> Camera
+            </button>
+            <button class="tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 whitespace-nowrap" data-tab="files">
+                <i class="fas fa-folder mr-1"></i> Files
+            </button>
+            <button class="tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 whitespace-nowrap" data-tab="settings">
+                <i class="fas fa-cog mr-1"></i> Settings
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="p-4 pb-20">
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <!-- Device Status Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <!-- Battery Card -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold flex items-center">
+                            <i class="fas fa-battery-three-quarters text-accent mr-2"></i>
+                            Battery
+                        </h3>
+                        <span class="text-2xl font-bold text-accent">78%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                        <div class="battery-fill bg-accent h-3 rounded-full" style="width: 78%"></div>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-2">4h 32m remaining</p>
+                </div>
+
+                <!-- Storage Card -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold flex items-center">
+                            <i class="fas fa-hdd text-secondary mr-2"></i>
+                            Storage
+                        </h3>
+                        <span class="text-sm text-gray-500">24.3GB / 32GB</span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                        <div class="bg-secondary h-3 rounded-full" style="width: 76%"></div>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-2">7.7GB available</p>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm mb-6">
+                <h3 class="font-semibold mb-4">Quick Actions</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <button class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg text-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                        <i class="fas fa-power-off text-danger mb-2 block"></i>
+                        <span class="text-sm">Power Off</span>
+                    </button>
+                    <button class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg text-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                        <i class="fas fa-wifi text-secondary mb-2 block"></i>
+                        <span class="text-sm">WiFi</span>
+                    </button>
+                    <button class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg text-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                        <i class="fab fa-bluetooth text-primary mb-2 block"></i>
+                        <span class="text-sm">Bluetooth</span>
+                    </button>
+                    <button class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg text-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" onclick="checkFirmwareUpdate()">
+                        <i class="fas fa-download text-accent mb-2 block"></i>
+                        <span class="text-sm">Update</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recent Notifications -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <h3 class="font-semibold mb-4">Recent Notifications</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <i class="fas fa-info-circle text-secondary mr-3"></i>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium">App Update Available</p>
+                            <p class="text-xs text-gray-500">Navigation Pro has an update</p>
+                        </div>
+                        <span class="text-xs text-gray-400">2m ago</span>
+                    </div>
+                    <div class="flex items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                        <i class="fas fa-check-circle text-accent mr-3"></i>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium">Sync Complete</p>
+                            <p class="text-xs text-gray-500">15 files transferred</p>
+                        </div>
+                        <span class="text-xs text-gray-400">5m ago</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Apps Tab -->
+        <div id="apps" class="tab-content">
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <!-- Running Apps -->
+                <div class="col-span-full">
+                    <h3 class="font-semibold mb-3">Running Apps</h3>
+                </div>
+                
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm relative">
+                    <div class="absolute top-2 right-2 w-3 h-3 bg-green-400 rounded-full"></div>
+                    <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mb-3">
+                        <i class="fas fa-map text-blue-600"></i>
+                    </div>
+                    <h4 class="font-medium">Navigation Pro</h4>
+                    <p class="text-xs text-gray-500 mb-3">Active route</p>
+                    <button class="w-full py-2 bg-danger text-white rounded-lg text-sm">Stop</button>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm relative">
+                    <div class="absolute top-2 right-2 w-3 h-3 bg-green-400 rounded-full"></div>
+                    <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center mb-3">
+                        <i class="fas fa-camera text-purple-600"></i>
+                    </div>
+                    <h4 class="font-medium">AR Camera</h4>
+                    <p class="text-xs text-gray-500 mb-3">Recording</p>
+                    <button class="w-full py-2 bg-danger text-white rounded-lg text-sm">Stop</button>
+                </div>
+
+                <!-- Available Apps -->
+                <div class="col-span-full mt-6">
+                    <h3 class="font-semibold mb-3">Available Apps</h3>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                    <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center mb-3">
+                        <i class="fas fa-translate text-green-600"></i>
+                    </div>
+                    <h4 class="font-medium">Translate</h4>
+                    <p class="text-xs text-gray-500 mb-3">Real-time translation</p>
+                    <button class="w-full py-2 bg-primary text-white rounded-lg text-sm" onclick="launchApp('translate')">Launch</button>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                    <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center mb-3">
+                        <i class="fas fa-shopping-cart text-orange-600"></i>
+                    </div>
+                    <h4 class="font-medium">Shopping</h4>
+                    <p class="text-xs text-gray-500 mb-3">AR shopping assistant</p>
+                    <button class="w-full py-2 bg-primary text-white rounded-lg text-sm" onclick="launchApp('shopping')">Launch</button>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                    <div class="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center mb-3">
+                        <i class="fas fa-gamepad text-red-600"></i>
+                    </div>
+                    <h4 class="font-medium">AR Games</h4>
+                    <p class="text-xs text-gray-500 mb-3">Interactive gaming</p>
+                    <button class="w-full py-2 bg-primary text-white rounded-lg text-sm" onclick="launchApp('games')">Launch</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Display Tab -->
+        <div id="display" class="tab-content space-y-6">
+            <!-- Brightness Control -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <h3 class="font-semibold mb-4 flex items-center">
+                    <i class="fas fa-sun text-yellow-500 mr-2"></i>
+                    Brightness
+                </h3>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <span class="text-sm">Display Brightness</span>
+                            <span class="text-sm text-gray-500" id="brightness-value">75%</span>
+                        </div>
+                        <input type="range" id="brightness-slider" class="slider w-full" min="0" max="100" value="75" oninput="updateBrightness(this.value)">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm">Auto Brightness</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" checked="">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Color & Display Settings -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <h3 class="font-semibold mb-4">Display Settings</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Color Mode</label>
+                        <select class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-base">
+                            <option>Natural</option>
+                            <option>Vivid</option>
+                            <option>Cool</option>
+                            <option>Warm</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Font Size</label>
+                        <select class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-base">
+                            <option>Small</option>
+                            <option>Medium</option>
+                            <option>Large</option>
+                            <option>Extra Large</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gesture Controls -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <h3 class="font-semibold mb-4">Gesture Controls</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div>
+                            <span class="font-medium">Tap to Select</span>
+                            <p class="text-sm text-gray-500">Single tap gesture</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" checked="">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div>
+                            <span class="font-medium">Swipe Navigation</span>
+                            <p class="text-sm text-gray-500">Swipe left/right</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" checked="">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div>
+                            <span class="font-medium">Voice Commands</span>
+                            <p class="text-sm text-gray-500">Hey GF activation</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Camera Tab -->
+        <div id="camera" class="tab-content space-y-6">
+            <!-- Live Preview -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <h3 class="font-semibold mb-4">Live Preview</h3>
+                <div class="aspect-video bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center mb-4" id="live-preview">
+                    <div class="text-center">
+                        <i class="fas fa-eye text-4xl text-gray-400 mb-2"></i>
+                        <p class="text-gray-500">Camera preview will appear here</p>
+                        <button class="mt-3 px-4 py-2 bg-primary text-white rounded-lg text-sm" onclick="startPreview()">Start Preview</button>
+                    </div>
+                </div>
+                <div class="flex space-x-3">
+                    <button class="flex-1 py-3 bg-primary text-white rounded-lg font-medium" onclick="takePhoto()">
+                        <i class="fas fa-camera mr-2"></i>Take Photo
+                    </button>
+                    <button class="flex-1 py-3 bg-danger text-white rounded-lg font-medium" onclick="startRecording()">
+                        <i class="fas fa-video mr-2"></i>Record Video
+                    </button>
+                </div>
+            </div>
+
+            <!-- Camera Settings -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <h3 class="font-semibold mb-4">Camera Settings</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Resolution</label>
+                        <select class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-base">
+                            <option>4K (3840x2160)</option>
+                            <option>1080p (1920x1080)</option>
+                            <option>720p (1280x720)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Frame Rate</label>
+                        <select class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-base">
+                            <option>60 FPS</option>
+                            <option>30 FPS</option>
+                            <option>24 FPS</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Captures -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <h3 class="font-semibold mb-4">Recent Captures</h3>
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-image text-gray-400"></i>
+                    </div>
+                    <div class="aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-video text-gray-400"></i>
+                    </div>
+                    <div class="aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-image text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Files Tab -->
+        <div id="files" class="tab-content space-y-6">
+            <!-- Storage Overview -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <h3 class="font-semibold mb-4">Storage Overview</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="flex items-center"><i class="fas fa-photo-video text-blue-500 mr-2"></i>Photos &amp; Videos</span>
+                        <span class="text-sm text-gray-500">12.3 GB</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="flex items-center"><i class="fas fa-file-alt text-green-500 mr-2"></i>Documents</span>
+                        <span class="text-sm text-gray-500">2.1 GB</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="flex items-center"><i class="fas fa-download text-purple-500 mr-2"></i>Downloads</span>
+                        <span class="text-sm text-gray-500">3.2 GB</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- File Transfer -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <h3 class="font-semibold mb-4">File Transfer</h3>
+                <div class="space-y-3">
+                    <button class="w-full p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-center hover:border-primary transition-colors" onclick="selectFiles()">
+                        <i class="fas fa-upload text-2xl text-gray-400 mb-2"></i>
+                        <p class="text-sm text-gray-500">Tap to select files to transfer</p>
+                    </button>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button class="p-3 bg-primary text-white rounded-lg" onclick="syncToGlasses()">
+                            <i class="fas fa-arrow-up mr-2"></i>To Glasses
+                        </button>
+                        <button class="p-3 bg-secondary text-white rounded-lg" onclick="syncFromGlasses()">
+                            <i class="fas fa-arrow-down mr-2"></i>From Glasses
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Files -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <h3 class="font-semibold mb-4">Recent Files</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <i class="fas fa-file-pdf text-red-500 mr-3"></i>
+                        <div class="flex-1">
+                            <p class="font-medium">Meeting Notes.pdf</p>
+                            <p class="text-sm text-gray-500">2.3 MB • 2 hours ago</p>
+                        </div>
+                        <button class="p-2 text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                    <div class="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <i class="fas fa-image text-blue-500 mr-3"></i>
+                        <div class="flex-1">
+                            <p class="font-medium">AR_Screenshot_001.jpg</p>
+                            <p class="text-sm text-gray-500">1.8 MB • 5 hours ago</p>
+                        </div>
+                        <button class="p-2 text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content space-y-6">
+            <!-- User Profile -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <h3 class="font-semibold mb-4">User Profile</h3>
+                <div class="flex items-center space-x-4 mb-4">
+                    <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-white text-xl font-bold">
+                        JD
+                    </div>
+                    <div>
+                        <h4 class="font-medium">John Doe</h4>
+                        <p class="text-sm text-gray-500">john.doe@email.com</p>
+                    </div>
+                </div>
+                <button class="w-full py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" onclick="switchUser()">
+                    Switch User
+                </button>
+            </div>
+
+            <!-- Device Settings -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <h3 class="font-semibold mb-4">Device Settings</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span>Notifications</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" checked="">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span>Location Services</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" checked="">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span>Auto Sync</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Privacy & Security -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <h3 class="font-semibold mb-4">Privacy &amp; Security</h3>
+                <div class="space-y-3">
+                    <button class="w-full text-left p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <span>App Permissions</span>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    </button>
+                    <button class="w-full text-left p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <span>Data Usage</span>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    </button>
+                    <button class="w-full text-left p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <span>Reset Settings</span>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- About -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <h3 class="font-semibold mb-4">About</h3>
+                <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                    <div class="flex justify-between">
+                        <span>App Version</span>
+                        <span>2.1.4</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Firmware Version</span>
+                        <span>1.8.2</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Device Model</span>
+                        <span>GF S+</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Update Modal -->
+    <div id="update-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-sm w-full mx-4">
+            <h3 class="text-lg font-semibold mb-4">Firmware Update Available</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">Version 1.9.0 is available with new features and bug fixes.</p>
+            <div class="flex space-x-3">
+                <button class="flex-1 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg" onclick="closeModal('update-modal')">Later</button>
+                <button class="flex-1 py-2 bg-primary text-white rounded-lg" onclick="startUpdate()">Update</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Input -->
+    <input type="file" id="file-input" multiple="" style="display: none;" onchange="handleFileSelect(event)">
+
+    <script>
+        // Dark mode detection
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const tabName = e.target.getAttribute('data-tab');
+                
+                // Update active tab button
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('border-primary', 'text-primary');
+                    b.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'dark:text-gray-400', 'dark:hover:text-gray-300');
+                });
+                e.target.classList.add('border-primary', 'text-primary');
+                e.target.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'dark:text-gray-400', 'dark:hover:text-gray-300');
+                
+                // Show active tab content
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(tabName).classList.add('active');
+            });
+        });
+
+        // Functions
+        function updateBrightness(value) {
+            document.getElementById('brightness-value').textContent = value + '%';
+        }
+
+        function checkFirmwareUpdate() {
+            document.getElementById('update-modal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function startUpdate() {
+            closeModal('update-modal');
+            showCustomAlert('Firmware update started. This may take a few minutes.');
+        }
+
+        function launchApp(appName) {
+            showCustomAlert(`Launching ${appName} app on GF S+ glasses...`);
+        }
+
+        function startPreview() {
+            const preview = document.getElementById('live-preview');
+            preview.innerHTML = `
+                <div class="relative w-full h-full bg-gray-800 rounded-lg overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 opacity-50"></div>
+                    <div class="absolute top-4 left-4 text-white">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                            <span class="text-sm">Live Preview</span>
+                        </div>
+                    </div>
+                    <div class="absolute bottom-4 right-4 text-white text-sm">
+                        4K • 60fps
+                    </div>
+                </div>
+            `;
+        }
+
+        function takePhoto() {
+            showCustomAlert('Photo captured and saved to gallery!');
+        }
+
+        function startRecording() {
+            showCustomAlert('Video recording started!');
+        }
+
+        function selectFiles() {
+            document.getElementById('file-input').click();
+        }
+
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            showCustomAlert(`${files.length} file(s) selected for transfer.`);
+        }
+
+        function syncToGlasses() {
+            showCustomAlert('Syncing files to GF S+ glasses...');
+        }
+
+        function syncFromGlasses() {
+            showCustomAlert('Syncing files from GF S+ glasses...');
+        }
+
+        function switchUser() {
+            showCustomAlert('User switching not implemented in demo.');
+        }
+
+        function showCustomAlert(message) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-sm w-full mx-4">
+                    <p class="text-gray-700 dark:text-gray-300 mb-4">${message}</p>
+                    <button class="w-full py-2 bg-primary text-white rounded-lg" onclick="this.closest('.fixed').remove()">OK</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+    </script>
+
+
+</body></html>
